@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import KaKaoMap from "./KaKaoMap";
+import KaKaoMapBanJoon from './KaKaoMapBanJoon';
 
 export default function TermitMap() {
     const [mapHeight, setMapHeight] = useState<string>('calc(100vh - 80px)');
@@ -47,7 +48,7 @@ export default function TermitMap() {
                 overflow: 'hidden'
             }}
         >
-            <KaKaoMap height="100%"/>
+            <KaKaoMapBanJoon height="100%"/>
         </div>
     );
 }
