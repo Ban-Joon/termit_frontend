@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Message, Role } from '../types';
 import { UserIcon, BotIcon, WarningIcon } from './Icons';
 
@@ -8,6 +8,14 @@ interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === Role.USER;
+  const [formattedTime, setFormattedTime] = useState<string>('');
+
+  // 클라이언트에서만 시간 포맷팅
+  useEffect(() => {
+    setFormattedTime(
+      message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    );
+  }, [message.timestamp]);
 
   return (
     <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} mb-6`}>
@@ -38,9 +46,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           </div>
           
           {/* Timestamp */}
-          <div className={`text-[10px] md:text-xs mt-2 text-right opacity-70 ${isUser ? 'text-blue-100' : 'text-slate-400'}`}>
-            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </div>
+          {formattedTime && (
+            <div className={`text-[10px] md:text-xs mt-2 text-right opacity-70 ${isUser ? 'text-blue-100' : 'text-slate-400'}`}>
+              {formattedTime}
+            </div>
+          )}
         </div>
       </div>
     </div>
