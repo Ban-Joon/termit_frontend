@@ -8,17 +8,22 @@ import InputArea from './components/InputArea';
 import { LightBulbIcon, InfoIcon } from './components/Icons';
 
 export default function AIPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: Role.MODEL,
-      text: "안녕하세요! 도시정비 관련 궁금증을 시원하게 해결해 드리는 '도시정비 해결사'입니다. \n재개발, 재건축 절차나 복잡한 법령에 대해 궁금한 점이 있으시면 편하게 물어보세요.",
-      timestamp: new Date(),
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // 클라이언트에서만 초기 메시지 설정
+  useEffect(() => {
+    setMessages([
+      {
+        id: 'welcome',
+        role: Role.MODEL,
+        text: "안녕하세요! 도시정비 관련 궁금증을 시원하게 해결해 드리는 '도시정비 해결사'입니다. \n재개발, 재건축 절차나 복잡한 법령에 대해 궁금한 점이 있으시면 편하게 물어보세요.",
+        timestamp: new Date(),
+      }
+    ]);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
