@@ -22,7 +22,7 @@ export default function LoginPage() {
           로그인/회원가입
         </Title>
         <Text c="dimmed" size="xs" ta="left" mb={30} style={{ color: '#868e96' }}>
-          성공적인 신축개발 검토! TERMIT과 함께 시작하세요.
+          미래의 재건축 분담금 분석! TERMIT과 함께 시작하세요.
         </Text>
 
         <TextInput 
