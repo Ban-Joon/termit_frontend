@@ -13,6 +13,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@media (min-width: 1024px) {
+  .desktop-touch-auto {
+    touch-action: auto !important;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -24,4 +30,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overscroll-behavior: none; /* Prevent pull-to-refresh/bounce on mobile */
 }
+
+

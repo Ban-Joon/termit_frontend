@@ -14,9 +14,9 @@ export function Header() {
             </Text>
           </Link>
           <Group gap={30} visibleFrom="sm">
-            <Link href="/contribution-map" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <a href="/contribution-map" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <Text size="sm" fw={500} style={{ cursor: 'pointer' }}>분담금 지도</Text>
-            </Link>
+            </a>
             <Link href="/ai" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <Text size="sm" fw={500} style={{ cursor: 'pointer' }}>정비사업 AI</Text>
             </Link>

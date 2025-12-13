@@ -1,16 +1,24 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
+import { useMediaQuery } from '@mantine/hooks';
 
 type LatLng = { lat: number; lng: number };
 type Marker = { position: LatLng; title?: string; contentHtml?: string };
+type CustomOverlayType = { id: string; position: LatLng; content: string };
+export type PolygonType = { path: LatLng[]; strokeColor?: string; fillColor?: string; };
 
 interface KakaoMapProps {
   center?: LatLng;           // 초기 중심 좌표
   level?: number;            // 확대 레벨 (낮을수록 확대)
   markers?: Marker[];        // 표시할 마커 목록
+  customOverlays?: CustomOverlayType[]; // 커스텀 오버레이 목록
+  polygons?: PolygonType[];  // 다각형 목록
   height?: number | string;  // 컨테이너 높이
+  onOverlayClick?: (id: string) => void; // 오버레이 클릭 이벤트
+  onCenterChange?: (center: LatLng) => void;
+  onZoomChange?: (level: number) => void;
 }
 
 declare global {
@@ -20,13 +28,30 @@ declare global {
 }
 
 export default function KaKaoMapBanJoon({
-  center = { lat: 37.5665, lng: 126.9780 }, // 서울시청
-  level = 4,
+  center = { lat: 36.3504, lng: 127.3845 }, // 대전시청
+  level = 12,
   markers = [],
+  customOverlays = [],
+  polygons = [],
   height = 420,
+  onOverlayClick,
+  onCenterChange,
+  onZoomChange,
 }: KakaoMapProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
+  const customOverlaysRef = useRef<any[]>([]);
+  const polygonsRef = useRef<any[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Keep latest callbacks in refs to use in event listeners without re-binding
+  const onCenterChangeRef = useRef(onCenterChange);
+  const onZoomChangeRef = useRef(onZoomChange);
+
+  useEffect(() => {
+    onCenterChangeRef.current = onCenterChange;
+    onZoomChangeRef.current = onZoomChange;
+  }, [onCenterChange, onZoomChange]);
 
   const initMap = () => {
     // 이미 맵이 초기화되어 있으면 리턴
@@ -39,10 +64,16 @@ export default function KaKaoMapBanJoon({
       const map = new kakao.maps.Map(mapRef.current, {
         center: new kakao.maps.LatLng(center.lat, center.lng),
         level,
+        draggable: true, // Enable dragging explicitly
+        scrollwheel: true,
       });
+      
+      // 모바일 등에서 확실하게 드래그 활성화
+      map.setDraggable(true);
 
       // 맵 인스턴스 저장
       mapInstanceRef.current = map;
+      setIsLoaded(true);
 
       // 줌/타입 컨트롤
       const zoomCtrl = new kakao.maps.ZoomControl();
@@ -55,8 +86,17 @@ export default function KaKaoMapBanJoon({
       kakao.maps.event.addListener(map, "zoom_changed", () => {
         const currentLevel = map.getLevel();
         console.log("현재 줌 레벨:", currentLevel);
-        // 🔹 여기에 원하는 로직을 추가하세요.
-        // 예: 상태 업데이트, 특정 줌 레벨에서 마커 크기 변경 등
+        if (onZoomChangeRef.current) {
+            onZoomChangeRef.current(currentLevel);
+        }
+      });
+
+      // ✅ 중심 좌표 변경 이벤트 감지 (이동 종료 시)
+      kakao.maps.event.addListener(map, "dragend", () => {
+        const center = map.getCenter();
+        if (onCenterChangeRef.current) {
+            onCenterChangeRef.current({ lat: center.getLat(), lng: center.getLng() });
+        }
       });
 
       // 마커들 추가
@@ -78,6 +118,7 @@ export default function KaKaoMapBanJoon({
         setTimeout(() => {
           map.relayout();
           map.setCenter(currCenter);
+          map.setDraggable(true); // Ensure draggable is re-enabled
         }, 0);
       };
 
@@ -85,6 +126,20 @@ export default function KaKaoMapBanJoon({
 
       // cleanup 함수를 위해 이벤트 리스너 참조 저장
       mapInstanceRef.current._resizeHandler = handleResize;
+
+      // Force-enable dragging on mobile via direct event handling
+      const preventTouch = (e: TouchEvent) => {
+        // Allow pinch-zoom (2 fingers) but prevent scroll (1 finger) to force map drag
+        if (e.touches.length === 1) {
+            e.preventDefault();
+        }
+      };
+      
+      if (mapRef.current) {
+         // Use passive: false to allow preventDefault
+         mapRef.current.addEventListener('touchmove', preventTouch, { passive: false });
+      }
+      mapInstanceRef.current._preventTouch = preventTouch; 
     });
   };
 
@@ -95,6 +150,10 @@ export default function KaKaoMapBanJoon({
       // 약간의 지연을 두어 DOM이 완전히 준비될 때까지 대기
       const timer = setTimeout(() => {
         initMap();
+        // Force draggable just in case
+        if (mapInstanceRef.current) {
+            mapInstanceRef.current.setDraggable(true);
+        }
       }, 100);
       
       return () => clearTimeout(timer);
@@ -107,9 +166,112 @@ export default function KaKaoMapBanJoon({
       if (mapInstanceRef.current?._resizeHandler) {
         window.removeEventListener("resize", mapInstanceRef.current._resizeHandler);
       }
+      if (mapInstanceRef.current?._preventTouch && mapRef.current) {
+         mapRef.current.removeEventListener('touchmove', mapInstanceRef.current._preventTouch);
+      }
       mapInstanceRef.current = null;
     };
   }, []);
+
+  // Polygons Update Effect
+  useEffect(() => {
+      if (!isLoaded) return;
+      const map = mapInstanceRef.current;
+      const kakao = window.kakao;
+      if (!map || !kakao) return;
+
+      // Clear existing
+      polygonsRef.current.forEach(p => p.setMap(null));
+      polygonsRef.current = [];
+
+      // Add new
+      if (polygons && polygons.length > 0) {
+          polygons.forEach((poly) => {
+            const path = poly.path.map(p => new kakao.maps.LatLng(p.lat, p.lng));
+            const newPoly = new kakao.maps.Polygon({
+                map: map,
+                path: path,
+                strokeWeight: 2,
+                strokeColor: poly.strokeColor || '#5C7CFA',
+                strokeOpacity: 0.8,
+                strokeStyle: 'solid',
+                fillColor: poly.fillColor || '#A5D8FF',
+                fillOpacity: 0.5 
+            });
+            polygonsRef.current.push(newPoly);
+        });
+      }
+  }, [polygons, isLoaded]);
+
+  // Center Update Effect
+  useEffect(() => {
+    if (!isLoaded || !mapInstanceRef.current || !window.kakao) return;
+    const currentCenter = mapInstanceRef.current.getCenter();
+    const newCenter = new window.kakao.maps.LatLng(center.lat, center.lng);
+    
+    // Check if distance is significant to avoid loops/jitter
+    const dist = Math.sqrt(
+        Math.pow(currentCenter.getLat() - center.lat, 2) + 
+        Math.pow(currentCenter.getLng() - center.lng, 2)
+    );
+
+    if (dist > 0.00001) {
+        mapInstanceRef.current.setCenter(newCenter);
+    }
+  }, [center, isLoaded]);
+
+  // Level Update Effect
+  useEffect(() => {
+    if (!isLoaded || !mapInstanceRef.current) return;
+    const currentLevel = mapInstanceRef.current.getLevel();
+    if (currentLevel !== level) {
+         mapInstanceRef.current.setLevel(level, { animate: true });
+    }
+  }, [level, isLoaded]);
+
+  // Custom Overlays Update Effect
+  useEffect(() => {
+    if (!isLoaded) return;
+    const map = mapInstanceRef.current;
+    const kakao = window.kakao;
+    if (!map || !kakao) return;
+
+    // Clear existing
+    customOverlaysRef.current.forEach(o => o.setMap(null));
+    customOverlaysRef.current = [];
+
+    // Add new
+    if (customOverlays && customOverlays.length > 0) {
+      customOverlays.forEach((overlay) => {
+         const pos = new kakao.maps.LatLng(overlay.position.lat, overlay.position.lng);
+         
+         const contentEl = document.createElement('div');
+         contentEl.innerHTML = overlay.content;
+         contentEl.style.cursor = 'pointer';
+         
+         // contentEl.addEventListener('mousedown', (e) => e.stopPropagation()); // Removed per checklist
+         // contentEl.addEventListener('touchstart', (e) => e.stopPropagation()); // Removed per checklist
+         contentEl.addEventListener('click', (e) => {
+             e.stopPropagation(); // Prevent map click
+             if (onOverlayClick) onOverlayClick(overlay.id);
+         });
+
+         const newOverlay = new kakao.maps.CustomOverlay({
+             map: map,
+             position: pos,
+             content: contentEl,
+             yAnchor: 1,
+             zIndex: 10
+         });
+         
+         customOverlaysRef.current.push(newOverlay);
+      });
+    }
+  }, [customOverlays, onOverlayClick, isLoaded]);
+
+  // Responsive Touch Action Logic:
+  // Using Inline Style (Mobile Default) + CSS Class Override (Desktop)
+  // This ensures mobile always works (priority), while desktop gets restored via !important CSS.
 
   return (
     <>
@@ -127,11 +289,14 @@ export default function KaKaoMapBanJoon({
       <div style={{ width: "100%", height: "100%", margin: 0, padding: 0 }}>
         <div
             ref={mapRef}
+            className="desktop-touch-auto" // Valid only on desktop via globals.css
             style={{
             width: "100%",
             height: "100%",
             margin: 0,
             padding: 0,
+            touchAction: 'none', // Default for mobile (Inline has high specificity, but Class has !important)
+            pointerEvents: 'auto'
             }}
         />
       </div>

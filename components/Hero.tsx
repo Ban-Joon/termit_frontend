@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Container, Title, Text, Button, Overlay, Box } from '@mantine/core';
 
 export function Hero() {
@@ -55,19 +56,21 @@ export function Hero() {
             가장 정확한 분석 결과를 제공합니다.
           </Text>
 
-          <Button 
-            size="xl" 
-            color="blue" 
-            radius="md" 
-            style={{ 
-              width: 'fit-content',
-              fontSize: '18px',
-              fontWeight: 600,
-              padding: '0 40px'
-            }}
-          >
-            TERMIT 시작하기
-          </Button>
+          <Link href="/contribution-map" passHref>
+            <Button 
+              size="xl" 
+              color="blue" 
+              radius="md" 
+              style={{ 
+                width: 'fit-content',
+                fontSize: '18px',
+                fontWeight: 600,
+                padding: '0 40px'
+              }}
+            >
+              TERMIT 시작하기
+            </Button>
+          </Link>
         </Box>
       </Container>
     </div>

@@ -33,11 +33,11 @@ export default function ReservationPage() {
 
             {/* Testimonial Box */}
             <Paper p="xl" radius="md" bg="gray.0">
-                <Text size="md" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
-                    “본 서비스는 공사 현장에서 실제로 사용되는 자재와 상품, 시공 단가를 자세히 조사하여 조합이 객관적이고 합리적인 공사비를 판단할 수 있도록 도와드립니다.
-브랜드별 자재 가격, 시공 방식에 따른 단가 차이, 최근 시장 동향 등 다양한 정보를 기반으로 총 공사비가 어떻게 구성되는지 명확하게 이해할 수 있습니다.
-이를 통해 과도한 공사비 책정이나 불필요한 비용을 피하고, 사업에 적합한 수준의 합리적인 공사비를 산정할 수 있습니다.
-정비사업에서 핵심이 되는 ‘투명성’과 ‘예측 가능성’을 높이는 데 중점을 둔 서비스입니다.”
+                <Text size="md" style={{ lineHeight: 1.5, marginBottom: '0px' }}>
+                    “본 서비스는 현재 건축 설계안의 주거 상품 수준을 진단해드리며 <br />객관적이고 합리적인 공사비를 판단할 수 있도록 도와드립니다. <br /><br />
+                      마감재별 등급, 외부특화와 커뮤니티 시설 및 시공 방식에 따른 <br />단가 차이, 최근 시장 동향 등 다양한 정보를 기반으로 총 공사비가 어떻게 구성되는지 명확하게 이해할 수 있습니다. <br /><br />
+                      이를 통해 과도한 공사비 책정이나 불필요한 비용을 피하고, 사업에 적합한 수준의 합리적인 공사비를 산정할 수 있습니다. <br />
+                      정비사업에서 핵심이 되는 ‘투명성’과 ‘예측 가능성’을 높이는 데 <br /> 있어서 중점을 둔 서비스입니다.”
                 </Text>
                 {/* <Box>
                     <Text fw={700} size="sm">Nick Erdenberger</Text>
@@ -48,7 +48,7 @@ export default function ReservationPage() {
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, md: 7 }}>
-            <Box pl={{ md: 40 }} mt={160}>
+            <Box pl={{ md: 40 }} mt={190}>
                 <Group grow mb="md">
                     <TextInput 
                         label="성명 *" 
