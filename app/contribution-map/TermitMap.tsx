@@ -60,10 +60,16 @@ export default function TermitMap() {
 
     // Automatic viewMode switching based on zoom level when no item is selected
     useEffect(() => {
-        if (selectedId) return; // Do not switch if sidebar is open
-
         const { level } = mapState;
         
+        // If sidebar is open, we usually maintain the current mode unless zoomed out too far (>= 9)
+        if (selectedId && level < 9) return; 
+
+        // Auto-close sidebar if zoomed out to level 9 or higher
+        if (selectedId && level >= 9) {
+            setSelectedId(null);
+        }
+
         if (level >= 10) {
             setViewMode('NATION');
         } else if (level >= 7) {
@@ -584,6 +590,7 @@ export default function TermitMap() {
                 onOverlayClick={handleOverlayClick}
                 onCenterChange={(center) => setMapState(prev => ({ ...prev, center }))}
                 onZoomChange={(level) => setMapState(prev => ({ ...prev, level }))}
+                isSidePanelOpen={!!selectedId}
             />
         </div>
     );

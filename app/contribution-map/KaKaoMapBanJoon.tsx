@@ -19,6 +19,7 @@ interface KakaoMapProps {
   onOverlayClick?: (id: string) => void; // 오버레이 클릭 이벤트
   onCenterChange?: (center: LatLng) => void;
   onZoomChange?: (level: number) => void;
+  isSidePanelOpen?: boolean;
 }
 
 declare global {
@@ -37,6 +38,7 @@ export default function KaKaoMapBanJoon({
   onOverlayClick,
   onCenterChange,
   onZoomChange,
+  isSidePanelOpen = false,
 }: KakaoMapProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -273,6 +275,38 @@ export default function KaKaoMapBanJoon({
   // Using Inline Style (Mobile Default) + CSS Class Override (Desktop)
   // This ensures mobile always works (priority), while desktop gets restored via !important CSS.
 
+  // --- 검색 및 UI 상태 관리 ---
+  const [searchText, setSearchText] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  
+  // 장소 검색용 인기 검색어 (기존)
+  const mockTrendingKeywords = [
+    { rank: 1, keyword: "성심당", change: "up" },
+    { rank: 2, keyword: "대전역", change: "-" },
+    { rank: 3, keyword: "한밭수목원", change: "up" },
+    { rank: 4, keyword: "오월드", change: "down" },
+    { rank: 5, keyword: "엑스포 시민광장", change: "up" },
+    { rank: 6, keyword: "유성온천", change: "-" },
+    { rank: 7, keyword: "계족산 황톳길", change: "down" },
+    { rank: 8, keyword: "대청호", change: "up" },
+    { rank: 9, keyword: "으능정이 거리", change: "-" },
+    { rank: 10, keyword: "대전 신세계", change: "up" },
+  ];
+
+  // 실시간 인기 아파트 (새로 추가)
+  const mockPopularApartments = [
+    { rank: 1, name: "래미안 원베일리", price: "40.2억", change: "up" },
+    { rank: 2, name: "둔촌주공 재건축", price: "20.5억", change: "-" },
+    { rank: 3, name: "개포자이 프레지던스", price: "35.8억", change: "up" },
+    { rank: 4, name: "잠실 엘스", price: "27.1억", change: "down" },
+    { rank: 5, name: "반포자이", price: "38.5억", change: "up" },
+    { rank: 6, name: "헬리오시티", price: "25.0억", change: "-" },
+    { rank: 7, name: "압구정 현대", price: "50.0억", change: "up" },
+    { rank: 8, name: "은마아파트", price: "28.3억", change: "down" },
+    { rank: 9, name: "트리마제", price: "32.0억", change: "-" },
+    { rank: 10, name: "아크로리버파크", price: "45.7억", change: "up" },
+  ];
+
   return (
     <>
       {/* Kakao SDK: autoload=false 로 두고, 로드 후 수동 초기화 */}
@@ -286,7 +320,60 @@ export default function KaKaoMapBanJoon({
           }, 100);
         }}
       />
-      <div style={{ width: "100%", height: "100%", margin: 0, padding: 0 }}>
+      <div style={{ width: "100%", height: "100%", margin: 0, padding: 0, position: "relative" }}>
+        
+        {/* --- 검색창 및 인기 검색어 UI (Floating) --- */}
+        <div 
+          className={`absolute top-4 left-4 z-20 w-80 flex flex-col gap-2 transition-all duration-300 ease-in-out ${
+            isSidePanelOpen ? '-translate-x-[120%] opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
+          }`}
+        >
+          {/* 검색창 */}
+          <div className="bg-white rounded-lg shadow-md p-2 flex items-center gap-2 border border-gray-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="장소 검색"
+              className="flex-1 outline-none text-gray-700 bg-transparent text-sm p-1"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              // onBlur={() => setIsSearchFocused(false)} // 닫기 편의를 위해 일단 주석 처리
+            />
+          </div>
+
+          {/* 인기 검색어 리스트 (항상 표시) */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="text-sm font-bold text-gray-700">실시간 인기 아파트</h3>
+              <span className="text-xs text-gray-400">12.15 14:00 기준</span>
+            </div>
+            <ul className="max-h-64 overflow-y-auto">
+              {mockPopularApartments.map((item) => (
+                <li key={item.rank} className="flex items-center justify-between px-4 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-50 last:border-none">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm font-bold w-4 text-center ${item.rank <= 3 ? 'text-blue-600' : 'text-gray-500'}`}>
+                      {item.rank}
+                    </span>
+                    <span className="text-sm text-gray-700">{item.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-800">{item.price}</span>
+                    <span className={`text-xs ${
+                      item.change === 'up' ? 'text-red-500' : 
+                      item.change === 'down' ? 'text-blue-500' : 'text-gray-400'
+                    }`}>
+                      {item.change === 'up' ? '▲' : item.change === 'down' ? '▼' : '-'}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
         <div
             ref={mapRef}
             className="desktop-touch-auto" // Valid only on desktop via globals.css
